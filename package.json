@@ -2,9 +2,9 @@
   "name": "bc_lb_node",
   "version": "1.0.0",
   "description": "node application for blockchain library",
-  "main": "./bin/www",
+  "main": "./src/www",
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./src/www"
   },
   "author": "",
   "license": "ISC",
