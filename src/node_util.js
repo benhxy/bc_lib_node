@@ -15,7 +15,7 @@ var node_util = {
     data.username = username;
     data.private_key = ursa.generatePrivateKey(2048, 65537);
     data.public_key = data.private_key.toPublicPem("base64");
-    //console.log("Successfully created user and key pair.");
+    console.log("Successfully created user and key pair.");
   },
 
   //register node on either tracker server or peers - DONE

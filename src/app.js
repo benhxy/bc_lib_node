@@ -25,8 +25,11 @@ var config = require("../config");
   routes for testing
  */
 
-app.get("/test_catalog", function(req, res) {
-  return res.json({message: test.test_catalog()});
+app.get("/test_render_catalog", function(req, res) {
+  return res.json({message: test.test_render_catalog()});
+});
+app.get("/test_valid_chain", function(req, res) {
+  return res.json({message: test.test_valid_chain()});
 });
 app.post("/hash", function(req, res) {
   console.log("entered route");
@@ -42,9 +45,8 @@ app.post("/api/frontend/users", function(req, res) {
   console.log("Entered POST /api/frontend/users");
 
   //user already generated, return error
-  if (username != "") {
+  if (data.username != "") {
     console.log("User already exists.");
-    res.status(400);
     return res.json({
       success: false,
       message: "This node has been initiated already. Please launch a new node for a new user."
@@ -69,6 +71,7 @@ app.post("/api/frontend/users", function(req, res) {
   //create the first block
   bc_util.create_block(config.first_proof);
 
+
 /*
 //TESTING (need multiple nodes)
   //query peers, get node lists -
@@ -80,13 +83,13 @@ app.post("/api/frontend/users", function(req, res) {
   //query peers, get blockchains
   bc_util.fetch_chain();
   */
-console.log("Here");
 
   //return catalog and private key
   return res.json({
     success: true,
     catalog: bc_util.render_catalog(),
-    private_key: data.private_key
+    blockchain: data.block_chain,
+    private_key: data.private_key.toPrivatePem("base64")
   });
 });
 
@@ -166,6 +169,20 @@ app.get("/api/frontend/nodes", function(req, res) {
 
 //trigger mining
 app.get("/api/frontend/mine", function(req, res) {
+  console.log("Enter GET /api/frontend/mine");
+
+  let last_block = bc_util.get_last_block();
+  let last_proof = last_block.proof;
+  let cur_proof = bc_util.mine_proof(last_proof);
+  bc_util.create_block(cur_proof);
+
+  console.log(data.block_chain);
+
+  res.json({
+    success: true,
+    block_chain: data.block_chain,
+    catalog: bc_util.render_catalog()
+  });
 
 });
 
@@ -266,6 +283,17 @@ app.get("/api/frontend/mine", function(req, res) {
      data.block_chain = req.body.block_chain;
 
    }
+
+ });
+
+ //get blockchain - DONE
+ app.get("/api/blockchain", function(req, res) {
+   console.log("Enter GET /api/blockchain");
+
+   res.json({
+     success: true,
+     block_chain: data.block_chain
+   });
 
  });
 

@@ -5,20 +5,23 @@ blockchain_util:
 
   hash: function(object) - DONE
 
-  valid_proof:function(prev_proof, cur_proof) - TESTING
-  valid_chain: function(chain) - TESTING
-  mine_proof: function(prev_proof) - TESTING
+  valid_proof:function(prev_proof, cur_proof) - DONE
+  valid_chain: function(chain) - DONE
+  mine_proof: function(prev_proof) - DONE
 
   valid_trans: function(trans) - DONE
   broadcast_trans: function(trans) - TESTING
 
   create_block: function(cur_proof) - DONE
+  get_last_block: function() - DONE
+
   fetch_chain: function()
   send_chain: function(url) - TESTING
   broadcast_chain: function() - TESTING
   resolve_conflict: function(chain, url) - TESTING
 
   render_catalog: function() - DONE
+  get_catalog: function() - DONE
 
 ====================
 
@@ -44,3 +47,4 @@ node routes:
   POST /api/nodes - TESTING
   POST /api/transactions
   POST /api/blockchain - TESTING
+  GET /api/blockchain - DONE

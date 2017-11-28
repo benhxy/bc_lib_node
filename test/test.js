@@ -13,7 +13,7 @@ var data = require("../src/blockchain_data");
 var test = {
 
   //insert transaction and render catalog
-  test_catalog: function() {
+  test_render_catalog: function() {
     console.log("enter test function");
 
     //LIST item
@@ -76,9 +76,29 @@ var test = {
     return bc_util.render_catalog()
 
     ;
-  }
+  },
 
-  //
+  //test valid chain function
+  test_valid_chain: function() {
+    let chain = [
+        {
+            "timestamp": 1511912726267,
+            "index": 0,
+            "prev_hash": "1",
+            "proof": 100,
+            "transactions": []
+        },
+        {
+            "timestamp": 1511912728967,
+            "index": 1,
+            "prev_hash": "163c4b6f50056f9bead3488e8e7c41702d02ff28cb0a4b8d813426ab9420aa44",
+            "proof": 41047,
+            "transactions": []
+        }
+    ];
+
+    return bc_util.valid_chain(chain);
+  }
 
 
 };

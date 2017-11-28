@@ -15,14 +15,16 @@ var blockchain_util = {
     return sha256(stringify(object));
   },
 
-  //valid proof - TESTING
+  //valid proof - DONE
   valid_proof:function(prev_proof, cur_proof) {
-    let guess_hash = sha256(prev_proof.concat(cur_proof));
+    let guess_hash = sha256("" + prev_proof + cur_proof);
     return guess_hash.substring(0,4) == "0000";
   },
 
-  //valid whole chain - TESTING
+  //valid whole chain - DONE
   valid_chain: function(chain) {
+    console.log("Enter valide chain");
+
     if (chain.length == 1) {
       return true;
     }
@@ -32,24 +34,25 @@ var blockchain_util = {
         return false;
       }
       //check if hash is continuous
-      if (hash(chain[i - 1]) != chain[i].previous_hash) {
+      if (this.hash(chain[i - 1]) != chain[i].prev_hash) {
         return false;
       }
       //check if proof is continuous
-      if (!valid_proof(chain[i - 1].proof, chain[i].proof)) {
+      if (!this.valid_proof(chain[i - 1].proof, chain[i].proof)) {
         return false;
       }
     }
     return true;
   },
 
-  //mining - TESTING
+  //mine the next proof - DONE
   mine_proof: function(prev_proof) {
-    let proof = 0;
-    while (!valid_proof(prev_proof, proof)) {
-      proof++;
+    console.log("Enter mine proof");
+    let cur_proof = 0;
+    while (!this.valid_proof(prev_proof, cur_proof)) {
+      cur_proof++;
     }
-    return proof;
+    return cur_proof;
   },
 
   //validate transaction against catalog - DONE
@@ -110,6 +113,7 @@ var blockchain_util = {
 
   //create a new block, include all unposted transactions - DONE
   create_block: function(cur_proof) {
+    console.log("Enter create block");
 
     //create new block object
     let new_block = {};
@@ -118,10 +122,13 @@ var blockchain_util = {
     if (data.block_chain.length == 0) {
       new_block.prev_hash = "1";
     } else {
-      data.prev_hash = hash(data.block_chain[data.block_chain.length - 1]);
+      new_block.prev_hash = this.hash(this.get_last_block());
     }
     new_block.proof = cur_proof;
-    new_block.transactions = data.unposted_trans;
+    new_block.transactions = JSON.parse(JSON.stringify(data.unposted_trans));
+
+    //push into chain
+    data.block_chain.push(new_block);
 
     //move unposted trans to posted transactions
     data.unposted_trans.forEach(function(trans) {
@@ -129,6 +136,11 @@ var blockchain_util = {
     });
     data.unposted_trans = [];
 
+  },
+
+  //get last blockchain - DONE
+  get_last_block: function() {
+    return data.block_chain[data.block_chain.length - 1];
   },
 
   //fetch blockchain
@@ -254,6 +266,30 @@ var blockchain_util = {
       }
     });
 
+    //export catalog as sorted array
+    let catalog_list = [];
+    data.catalog.forEach(function(item) {
+      catalog_list.push(item);
+    });
+    catalog_list.sort(function(item_1, item_2) {
+      if (item_1.title > item_2.title) {
+        return 1;
+      } else if (item_1.title < item2.title) {
+        return -1;
+      }
+      if (item_1.available > item_2.available) {
+        return 1;
+      } else if (item_1.available < item2.available) {
+        return -1;
+      }
+      return 0;
+    });
+
+    return catalog_list;
+  },
+
+  //get catalog as array - DONE
+  get_catalog: function(){
     //export catalog as sorted array
     let catalog_list = [];
     data.catalog.forEach(function(item) {
