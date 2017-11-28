@@ -7,13 +7,15 @@
 var app = require('./app');
 var debug = require('debug')('app:server');
 var http = require('http');
+var config = require("../config");
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort('3002');
+var port = normalizePort(config.port);
 app.set('port', port);
+console.log("Local node listening on " + config.port);
 
 /**
  * Create HTTP server.

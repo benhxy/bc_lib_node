@@ -11,33 +11,22 @@ var stringify = require("json-stable-stringify"); //offer stable string with key
 var axios = require("axios"); //json comm library
 var ursa = require("ursa"); //key pair generation library
 var sha256 = require("js-sha3").sha3_256; //hash function
+var ip_checker = require("is-ip");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 var bc_util = require("./blockchain_util");
-var bc_data = require("./blockchain_data");
-var node_data = require("./node_data");
+var node_util = require("./node_util");
+var data = require("./blockchain_data");
+var test = require("../test/test");
 var config = require("../config");
 
-//initiate data structures
-var tracker_url = "http://localhost:3001";
-node_data.username = "";
-node_data.public_key = "";
-node_data.private_key = "";
-node_data.node_list= new Map();
-bc_data.posted_trans = [];
-bc_data.unposted_trans = [];
-bc_data.block_chain = [];
-bc_data.catalog = new Map();
+/*
+  routes for testing
+ */
 
-console.log("App initiated");
-
-//testing paths
-app.get("/", function(req, res) {
-  console.log(bc_data.catalog);
-  bc_data.catalog.set("1", "2_value");
-  console.log(bc_data.catalog.get("1"));
-  return res.json({message: bc_util.test_function()});
+app.get("/test_catalog", function(req, res) {
+  return res.json({message: test.test_catalog()});
 });
 app.post("/hash", function(req, res) {
   console.log("entered route");
@@ -49,9 +38,9 @@ app.post("/hash", function(req, res) {
  */
 
 //enter username and start mining
-app.post("/api/users", function(req, res) {
-/*
-  //uncomment this checking upon production
+app.post("/api/frontend/users", function(req, res) {
+  console.log("Entered POST /api/frontend/users");
+
   //user already generated, return error
   if (username != "") {
     console.log("User already exists.");
@@ -61,12 +50,10 @@ app.post("/api/users", function(req, res) {
       message: "This node has been initiated already. Please launch a new node for a new user."
     });
   }
-*/
 
-  //error on empty username
+  //error checking on empty username
   if (!req.body.username || req.body.username == "") {
-    console.log("Require username in body.");
-    res.status(400);
+    console.log("Error: no user name in request");
     return res.json({
       success: false,
       message: "Please provide a username."
@@ -74,103 +61,212 @@ app.post("/api/users", function(req, res) {
   }
 
   //write username, generate key-pair
-  node_data.username = req.body.username;
-  node_data.private_key = ursa.generatePrivateKey(2048, 65537);
-  node_data.public_key = node_data.private_key.toPublicPem("base64");
+  node_util.init_node(req.body.username);
 
   //contact tracker-server and get node list
-  //create an object about itself
-  let node_info = {
-    username: node_data.username,
-    public_key: node_data.public_key
-  };
-  console.log(node_info);
-
-  axios.post("http://localhost:3001/api/nodes", node_info)
-    .then(response => {
-      //write node list into local data
-      console.log("Successfully get node list from tracker.");
-      for (let i = 0; i < response.data.list.length; i++) {
-        node_data.node_list.set(response.data.list[i].public_key, response.data.list[i]);
-      }
-    })
-    .catch(error => {
-      console.log("Rejected: " + error);
-    });
+  node_util.register_node(config.tracker_url);
 
   //create the first block
+  bc_util.create_block(config.first_proof);
 
+/*
+//TESTING (need multiple nodes)
+  //query peers, get node lists -
+  node_data.node_list.forEach( function(node) {
+    let peer_url = node.address + "/api/nodes";
+    node_util.register_node(peer_url);
+  });
 
-  //query neighbours, get node lists and blockchain
+  //query peers, get blockchains
+  bc_util.fetch_chain();
+  */
+console.log("Here");
 
-
-  //update node list and blockchain
-
-
-  //render ledger
-
-
-
-  //temp return json: delete upon production
-  res.status(200);
+  //return catalog and private key
   return res.json({
-    success: true
+    success: true,
+    catalog: bc_util.render_catalog(),
+    private_key: data.private_key
   });
 });
 
-//view all transaction history
-app.get("/api/local/transactions", function(req, res) {
-  res.status(200);
-  let payload = [];
-  for (let i = 0; i < bc_data.posted_trans.length; i++) {
-
-  }
+//view all transaction history - DONE
+app.get("/api/frontend/transactions", function(req, res) {
+  console.log("Entered GET /api/frontend/transactions");
+  let all_trans = [];
+  data.posted_trans.forEach(function(trans) {
+    all_trans.push(trans);
+  });
+  data.unposted_trans.forEach(function(trans) {
+    all_trans.push(trans);
+  });
+  return res.json({
+    success: true,
+    transactions: all_trans
+  });
 });
 
-//create a new transaction
-app.post("/api/local/transactions/new", function(req, res) {
+//create a new transaction - DONE
+app.post("/api/frontend/transactions", function(req, res) {
+  console.log("Entered POST /api/frontend/transactions");
+
+  //create trans object
+  let new_trans = {
+    type: req.body.type,
+    owner_pk: req.body.owner_pk,
+    owner_name: req.body.owner_name,
+    owner_address: req.body.owner_address,
+    isbn: req.body.isbn,
+    title: req.body.title,
+    borrower_pk: req.body.borrower_pk,
+    borrower_name: req.body.borrower_name,
+    borrower_address: req.body.borrower_address,
+    borrow_date: req.body.borrow_date,
+    due_date: req.body.due_date
+  };
+
+  //validate against catalog
+  if (!bc_util.valid_trans(new_trans)) {
+    console.log("Invalid transaction");
+    return res.json({
+      success: false,
+      message: "Transaction is invalid"
+    });
+  }
+
+  //insert into unposted transactions
+  data.unposted_trans.push(new_trans);
+  console.log(new_trans);
+
+  //broadcast transaction
+  //bc_util.broadcast_trans(new_trans);
+
+  //send catalog back
+  res.json({
+    success: true,
+    catalog: bc_util.render_catalog()
+  })
+
+});
+
+//view all peers - DONE
+app.get("/api/frontend/nodes", function(req, res) {
+  console.log("Entered GET /api/frontend/nodes");
+
+  let peers = [];
+  data.node_list.forEach(function(node) {
+    peers.push(node);
+  });
+
+  res.json({
+    success: true,
+    nodes: peers
+  });
+});
+
+//trigger mining
+app.get("/api/frontend/mine", function(req, res) {
 
 });
 
 /*
   routes for nodes communication
  */
- //receive individual node information from peer
- app.get("/api/peer/receive_node", function(req, res) {
-   if (req.data.username && req.data.public_key) {
-     //add node into list
-     let new_node = {
-       address: req.connection.remoteAddress + ":" + req.connection.remotePort,
-       username: req.data.username,
-       public_key: req.data.public_key
+
+ //receive individual node information from peer and send own node list back - TESTING
+ app.post("/api/nodes", function(req, res) {
+   console.log("Entered POST /api/nodes");
+
+   if (req.body.username && req.body.public_key) {
+
+     //check duplicate
+     if (node_data.node_list.has(req.body.public_key)) {
+       console.log("Already visited this node");
+       return res.send("You have already visited me");
      }
-     node_list.set(req.data.node.public_key, new_node);
-     //push current blockchain and transactions to new node
+
+     //create new node object
+     let new_node = {
+       username: req.body.username,
+       publick_key: req.body.public_key
+     };
+     if (ip_checker.v6(req.connection.remoteAddress)) {
+       new_node.address = "[" + req.connection.remoteAddress + "]:" + req.connection.remotePort;
+     } else {
+       new_node.address = req.connection.remoteAddress + ":" + req.connection.remotePort;
+     }
+     console.log(new_node);
+
+     //make copy of own list
+     let node_list_copy = [];
+     node_data.node_list.forEach(function(node){
+       node_list_copy.push(node);
+     });
+
+     //insert new node
+     node_data.node_list.set(new_node.public_key, new_node);
+
+     //send list back
+     return res.json({
+       success: true,
+       list: node_list_copy
+     });
+
+   } else {
+     return res.json({
+       success: false,
+       message: "Need username and public_key"
+     });
    }
-   return;
+
  });
 
  //receiv transaction from peer
- app.post("/api/peer/receive_trans", function(req, res) {
-   //error handling
-   if (!req.data.transaction || !req.data.signature) {
-     return;
-   }
-   //validate signature
-   let cur_trans = req.data.transaction;
-   let creator_pub_key_pem = "";
-   if (cur_trans.type = "BORROW") {
-     creator_pub_key_pem = transaction
+ app.post("/api/transactions", function(req, res) {
+   console.log("Entered POST /api/transactions");
+
+   //error input handling
+   if (!req.body.transaction || !req.body.signature) {
+     console.log("Error: no transaction or signature");
+     return res.json({
+       success: false,
+       message: "Transaction and signature are both required."
+     });
    }
 
- });
- //receive blockchain from peer
- app.get("/api/peer/receive_chain", function(req, res) {
-   if (req.data.blockchain && valid_chain(req.data.blockchain) && req.data.blockchain.length > block_chain.length) {
-     //if received chain is valid and longer, update self chain and broadcast
-     block_chain = req.data.blockchain;
-     broadcast_chain(block_chain);
+   let cur_trans = req.data.transaction;
+   //determine whose signature to use
+   let creator_pub_key_pem = "";
+   if (cur_trans.type = "BORROW") {
+     //only borrowing transactions can be initiated by borrower
+     creator_pub_key_pem = cur_trans.borrower_pk;
+   } else {
+     creator_pub_key_pem = cur_trans.owner_pk;
    }
+   //validate signature
+
+   //validate transactions against catalog
+
+   //save transaction locally
+
+   //update catalog
+
+ });
+
+ //receive blockchain from peer - TESTING
+ app.post("/api/blockchain", function(req, res) {
+   console.log("Entered POST /api/blockchain");
+   if (req.body.block_chain) {
+
+     //invalid chain or smaller length, disregard
+     if (!bc_util.valid_chain(req.body.block_chain) || req.body.block_chain.length <= data.block_chain.length) {
+       return;
+     }
+
+     data.block_chain = req.body.block_chain;
+
+   }
+
  });
 
  /*

@@ -1,0 +1,46 @@
+
+====================
+
+blockchain_util:
+
+  hash: function(object) - DONE
+
+  valid_proof:function(prev_proof, cur_proof) - TESTING
+  valid_chain: function(chain) - TESTING
+  mine_proof: function(prev_proof) - TESTING
+
+  valid_trans: function(trans) - DONE
+  broadcast_trans: function(trans) - TESTING
+
+  create_block: function(cur_proof) - DONE
+  fetch_chain: function()
+  send_chain: function(url) - TESTING
+  broadcast_chain: function() - TESTING
+  resolve_conflict: function(chain, url) - TESTING
+
+  render_catalog: function() - DONE
+
+====================
+
+node_util:
+
+  init_node: function(username) - DONE
+  register_node: function(url) - DONE
+  get_address: function(req) - DONE
+
+====================
+
+frontend routes:
+
+  POST /api/frontend/users"
+  GET /api/frontend/transactions" - DONE
+  POST /api/frontend/transactions" - DONE
+  GET /api/frontend/nodes" - DONE
+
+====================
+
+node routes:
+
+  POST /api/nodes - TESTING
+  POST /api/transactions
+  POST /api/blockchain - TESTING
