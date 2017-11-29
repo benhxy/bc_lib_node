@@ -1,12 +1,12 @@
 {
   "name": "bc_lb_node",
   "version": "1.0.0",
-  "description": "node application for blockchain library",
+  "description": "local node application for blockchain P2P library",
   "main": "./src/www",
   "scripts": {
     "start": "node ./src/www"
   },
-  "author": "",
+  "author": "Ben Hu <ben.huxiaoye@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.17.1",

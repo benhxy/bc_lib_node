@@ -15,7 +15,7 @@ var test = {
   //insert transaction and render catalog
   test_render_catalog: function() {
     console.log("enter test function");
-
+/*
     //LIST item
     let list_trans = {
       type: "LIST",
@@ -72,7 +72,7 @@ var test = {
     data.unposted_trans.push(borrow_trans);
     data.unposted_trans.push(return_trans);
     //data.unposted_trans.push(unlist_trans);
-
+*/
     return bc_util.render_catalog()
 
     ;
@@ -99,6 +99,7 @@ var test = {
 
     return bc_util.valid_chain(chain);
   }
+
 
 
 };

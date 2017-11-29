@@ -17,13 +17,16 @@ var blockchain_util = {
 
   //valid proof - DONE
   valid_proof:function(prev_proof, cur_proof) {
+
     let guess_hash = sha256("" + prev_proof + cur_proof);
+    console.log(prev_proof + "+" + cur_proof + "=>" + "" + prev_proof + cur_proof);
+    console.log(guess_hash);
     return guess_hash.substring(0,4) == "0000";
   },
 
   //valid whole chain - DONE
   valid_chain: function(chain) {
-    console.log("Enter valide chain");
+    console.log("--Enter valide chain");
 
     if (chain.length == 1) {
       return true;
@@ -47,7 +50,7 @@ var blockchain_util = {
 
   //mine the next proof - DONE
   mine_proof: function(prev_proof) {
-    console.log("Enter mine proof");
+    console.log("--Enter mine proof");
     let cur_proof = 0;
     while (!this.valid_proof(prev_proof, cur_proof)) {
       cur_proof++;
@@ -57,7 +60,7 @@ var blockchain_util = {
 
   //validate transaction against catalog - DONE
   valid_trans: function(trans) {
-    console.log("Enter validate transaction");
+    console.log("--Enter validate transaction");
 
     //check completeness of transaction
     if (!trans.type || !trans.owner_pk || !trans.owner_name || !trans.owner_address || !trans.isbn || !trans.title) {
@@ -73,47 +76,76 @@ var blockchain_util = {
       return false;
     }
 
+
+
     //check against catalog
     let key = trans.isbn + trans.owner_pk;
     //cannot double list
     if (trans.type == "LIST" && data.catalog.has(key)) {
+      console.log("Book already exits");
       return false;
     }
     //cannot unlist or borrow non-exist or unavailable books
     if ((trans.type == "UNLIST" || trans.type == "BORROW") && (!data.catalog.has(key) || !data.catalog.get(key).available)) {
-      return false;
-    }
-    //cannot return non-exist or available books, cannot return books borrowed by somebody else
-    if (trans.type == "RETURN" && (!data.catalog.has(key) || data.catalpg.get(key).available || data.catalog.get(key).borrower_pk != trans.borrower_pl)) {
+      console.log("Book is in use");
       return false;
     }
 
+    //cannot return non-exist or available books, cannot return books borrowed by somebody else
+    //console.log(trans.type == "RETURN");
+    //console.log(!data.catalog.has(key));
+    //console.log(!data.catalog.has(key));
+    //console.log(!data.catalog.has(key));
+
+    if (trans.type == "RETURN" && (!data.catalog.has(key) || data.catalog.get(key).available || data.catalog.get(key).borrower_pk != trans.borrower_pk)) {
+      console.log("Book not exists or is not borrowed");
+      return false;
+    }
+    console.log("Finish validation");
     return true;
 
   },
 
+  //verify the signature of a transaction - DONE
+  verify_sig: function(trans, sig, public_key) {
+    console.log("--Enter verify signature");
+    let pk = ursa.createPublicKey(public_key, "base64");
+    let result = pk.hashAndVerify("sha256", stringify(trans), sig);
+    console.log("Digital signature is " + result);
+    return result;
+  },
+
   //broadcast transaction - TESTING
   broadcast_trans: function(trans) {
+    console.log("--Enter broadcast transaction");
 
     //create signature and payload
+    console.log("Key: " + data.private_key);
+    console.log("Transaction hash: " + this.hash(data.private_key));
     let trans_sig = data.private_key.hashAndSign("sha256", stringify(trans));
+
+    console.log("flag");
+
     let payload = {
       transaction: trans,
       signature: trans_sig
     };
 
+/* to be tested with multiple peers
     data.node_list.forEach(function(node){
       let peer_url = node.address + "/api/transactions";
       axios.post(peer_url, payload)
         .then(response => console.log(response))
         .catch(error => console.log(error));
     });
+*/
+    return payload;
 
   },
 
   //create a new block, include all unposted transactions - DONE
   create_block: function(cur_proof) {
-    console.log("Enter create block");
+    console.log("--Enter create block");
 
     //create new block object
     let new_block = {};
@@ -165,38 +197,36 @@ var blockchain_util = {
       .catch(error => console.log(error));
   },
 
-  //broadcast blockchain - TESTING
+  //broadcast blockchain - DONE
   broadcast_chain: function() {
 
     data.node_list.forEach(function(node){
       let peer_url = node.address + "/api/blockchain";
-      send_chain(peer_url);
+      this.send_chain(peer_url);
     });
 
   },
 
-  //resolve chain conflict - TESTING
+  //resolve chain conflict, true if override - DONE
   resolve_conflict: function(chain, url) {
 
     //local chain is better, send it back
-    if (!valid_chain(chain) || chain.length <= data.block_chain.length) {
-      send_chain(url);
+    if (!this.valid_chain(chain) || chain.length <= data.block_chain.length) {
+      this.send_chain(url);
       return false;
     }
 
     //check if unposted transactions are in the new blocks, if yes, discard - NEXT PHASE
 
     //override local chain
-    data.block_chain = chain;
-
-    //render catalog
-    render_catalog();
+    data.block_chain = JSON.parse(JSON.stringify(chain));
+    return true;
 
   },
 
   //render catalog - DONE
   render_catalog: function() {
-    console.log("Enter render catalog");
+    console.log("--Enter render catalog");
 
     //combine all transactions and clear catalog
     let all_trans = [];
@@ -290,6 +320,8 @@ var blockchain_util = {
 
   //get catalog as array - DONE
   get_catalog: function(){
+    console.log("--Enter get catalog");
+
     //export catalog as sorted array
     let catalog_list = [];
     data.catalog.forEach(function(item) {

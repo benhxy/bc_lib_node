@@ -20,6 +20,7 @@ var node_util = {
 
   //register node on either tracker server or peers - DONE
   register_node: function(url) {
+    console.log("Enter register node");
     let node_info = {
       username: data.username,
       public_key: data.public_key
@@ -28,7 +29,7 @@ var node_util = {
     axios.post(url, node_info)
       .then(response => {
         //write node list into local data
-        //console.log("Successfully get node list from tracker.");
+        console.log("Successfully get node list from tracker.");
         response.data.list.forEach(function(node) {
           data.node_list.set(node.public_key, node);
         });

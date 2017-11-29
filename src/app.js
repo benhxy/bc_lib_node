@@ -42,9 +42,11 @@ app.post("/hash", function(req, res) {
 
 //enter username and start mining
 app.post("/api/frontend/users", function(req, res) {
+  console.log("========================================");
   console.log("Entered POST /api/frontend/users");
 
   //user already generated, return error
+  /*
   if (data.username != "") {
     console.log("User already exists.");
     return res.json({
@@ -52,6 +54,7 @@ app.post("/api/frontend/users", function(req, res) {
       message: "This node has been initiated already. Please launch a new node for a new user."
     });
   }
+  */
 
   //error checking on empty username
   if (!req.body.username || req.body.username == "") {
@@ -71,7 +74,6 @@ app.post("/api/frontend/users", function(req, res) {
   //create the first block
   bc_util.create_block(config.first_proof);
 
-
 /*
 //TESTING (need multiple nodes)
   //query peers, get node lists -
@@ -89,12 +91,14 @@ app.post("/api/frontend/users", function(req, res) {
     success: true,
     catalog: bc_util.render_catalog(),
     blockchain: data.block_chain,
-    private_key: data.private_key.toPrivatePem("base64")
+    private_key: data.private_key.toPrivatePem("base64"),
+    public_key: data.public_key
   });
 });
 
 //view all transaction history - DONE
 app.get("/api/frontend/transactions", function(req, res) {
+  console.log("========================================");
   console.log("Entered GET /api/frontend/transactions");
   let all_trans = [];
   data.posted_trans.forEach(function(trans) {
@@ -111,6 +115,7 @@ app.get("/api/frontend/transactions", function(req, res) {
 
 //create a new transaction - DONE
 app.post("/api/frontend/transactions", function(req, res) {
+  console.log("========================================");
   console.log("Entered POST /api/frontend/transactions");
 
   //create trans object
@@ -139,21 +144,23 @@ app.post("/api/frontend/transactions", function(req, res) {
 
   //insert into unposted transactions
   data.unposted_trans.push(new_trans);
-  console.log(new_trans);
 
   //broadcast transaction
-  //bc_util.broadcast_trans(new_trans);
+  let payload = bc_util.broadcast_trans(new_trans);
 
   //send catalog back
   res.json({
     success: true,
-    catalog: bc_util.render_catalog()
-  })
+    catalog: bc_util.render_catalog(),
+    transaction: payload.transaction,
+    signature: payload.signature
+  });
 
 });
 
 //view all peers - DONE
 app.get("/api/frontend/nodes", function(req, res) {
+  console.log("========================================");
   console.log("Entered GET /api/frontend/nodes");
 
   let peers = [];
@@ -167,8 +174,9 @@ app.get("/api/frontend/nodes", function(req, res) {
   });
 });
 
-//trigger mining
+//trigger mining - DONE
 app.get("/api/frontend/mine", function(req, res) {
+  console.log("========================================");
   console.log("Enter GET /api/frontend/mine");
 
   let last_block = bc_util.get_last_block();
@@ -176,12 +184,24 @@ app.get("/api/frontend/mine", function(req, res) {
   let cur_proof = bc_util.mine_proof(last_proof);
   bc_util.create_block(cur_proof);
 
-  console.log(data.block_chain);
+  //broadcast blockchain and resolve conflict
 
   res.json({
     success: true,
     block_chain: data.block_chain,
-    catalog: bc_util.render_catalog()
+    catalog: bc_util.get_catalog()
+  });
+
+});
+
+//view catalog - DONE
+app.get("/api/frontend/catalog", function(req, res) {
+  console.log("========================================");
+  console.log("Enter GET /api/frontend/catalog");
+
+  res.json({
+    success: true,
+    catalog: bc_util.get_catalog()
   });
 
 });
@@ -192,6 +212,7 @@ app.get("/api/frontend/mine", function(req, res) {
 
  //receive individual node information from peer and send own node list back - TESTING
  app.post("/api/nodes", function(req, res) {
+   console.log("========================================");
    console.log("Entered POST /api/nodes");
 
    if (req.body.username && req.body.public_key) {
@@ -240,6 +261,7 @@ app.get("/api/frontend/mine", function(req, res) {
 
  //receiv transaction from peer
  app.post("/api/transactions", function(req, res) {
+   console.log("========================================");
    console.log("Entered POST /api/transactions");
 
    //error input handling
@@ -270,24 +292,24 @@ app.get("/api/frontend/mine", function(req, res) {
 
  });
 
- //receive blockchain from peer - TESTING
+ //receive blockchain push from peer - TESTING
  app.post("/api/blockchain", function(req, res) {
+   console.log("========================================");
    console.log("Entered POST /api/blockchain");
-   if (req.body.block_chain) {
+   if (req.body.block_chain && !bc_util.resolve_conflict(req.body.block_chain)) {
 
-     //invalid chain or smaller length, disregard
-     if (!bc_util.valid_chain(req.body.block_chain) || req.body.block_chain.length <= data.block_chain.length) {
-       return;
-     }
-
-     data.block_chain = req.body.block_chain;
+     //local chain is better. Send back
+     res.json({
+       success: false,
+       block_chain: data.block_chain
+     });
 
    }
-
  });
 
- //get blockchain - DONE
+ //respind to peer's blockchain request - DONE
  app.get("/api/blockchain", function(req, res) {
+   console.log("========================================");
    console.log("Enter GET /api/blockchain");
 
    res.json({
