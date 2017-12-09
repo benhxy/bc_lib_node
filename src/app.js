@@ -46,7 +46,6 @@ app.post("/api/frontend/users", function(req, res) {
   console.log("Entered POST /api/frontend/users");
 
   //user already generated, return error
-  /*
   if (data.username != "") {
     console.log("User already exists.");
     return res.json({
@@ -54,7 +53,6 @@ app.post("/api/frontend/users", function(req, res) {
       message: "This node has been initiated already. Please launch a new node for a new user."
     });
   }
-  */
 
   //error checking on empty username
   if (!req.body.username || req.body.username == "") {
@@ -74,9 +72,7 @@ app.post("/api/frontend/users", function(req, res) {
   //create the first block
   bc_util.create_block(config.first_proof);
 
-/*
-//TESTING (need multiple nodes)
-  //query peers, get node lists -
+  //query peers, get node lists
   node_data.node_list.forEach( function(node) {
     let peer_url = node.address + "/api/nodes";
     node_util.register_node(peer_url);
@@ -84,7 +80,6 @@ app.post("/api/frontend/users", function(req, res) {
 
   //query peers, get blockchains
   bc_util.fetch_chain();
-  */
 
   //return catalog and private key
   return res.json({
@@ -96,7 +91,7 @@ app.post("/api/frontend/users", function(req, res) {
   });
 });
 
-//view all transaction history - DONE
+//view all transaction history
 app.get("/api/frontend/transactions", function(req, res) {
   console.log("========================================");
   console.log("Entered GET /api/frontend/transactions");
@@ -113,7 +108,7 @@ app.get("/api/frontend/transactions", function(req, res) {
   });
 });
 
-//create a new transaction - DONE
+//create a new transaction
 app.post("/api/frontend/transactions", function(req, res) {
   console.log("========================================");
   console.log("Entered POST /api/frontend/transactions");
@@ -158,7 +153,7 @@ app.post("/api/frontend/transactions", function(req, res) {
 
 });
 
-//view all peers - DONE
+//view all peers
 app.get("/api/frontend/nodes", function(req, res) {
   console.log("========================================");
   console.log("Entered GET /api/frontend/nodes");
@@ -210,114 +205,140 @@ app.get("/api/frontend/catalog", function(req, res) {
   routes for nodes communication
  */
 
- //receive individual node information from peer and send own node list back - TESTING
- app.post("/api/nodes", function(req, res) {
-   console.log("========================================");
-   console.log("Entered POST /api/nodes");
+//receive individual node information from peer and send own node list back - TESTING
+app.post("/api/nodes", function(req, res) {
+ console.log("========================================");
+ console.log("Entered POST /api/nodes");
 
-   if (req.body.username && req.body.public_key) {
+ if (req.body.username && req.body.public_key) {
 
-     //check duplicate
-     if (node_data.node_list.has(req.body.public_key)) {
-       console.log("Already visited this node");
-       return res.send("You have already visited me");
-     }
+   //check duplicate
+   if (node_data.node_list.has(req.body.public_key)) {
+     console.log("Already visited this node");
+     return res.send("You have already visited me");
+   }
 
-     //create new node object
-     let new_node = {
-       username: req.body.username,
-       publick_key: req.body.public_key
-     };
-     if (ip_checker.v6(req.connection.remoteAddress)) {
-       new_node.address = "[" + req.connection.remoteAddress + "]:" + req.connection.remotePort;
-     } else {
-       new_node.address = req.connection.remoteAddress + ":" + req.connection.remotePort;
-     }
-     console.log(new_node);
-
-     //make copy of own list
-     let node_list_copy = [];
-     node_data.node_list.forEach(function(node){
-       node_list_copy.push(node);
-     });
-
-     //insert new node
-     node_data.node_list.set(new_node.public_key, new_node);
-
-     //send list back
-     return res.json({
-       success: true,
-       list: node_list_copy
-     });
-
+   //create new node object
+   let new_node = {
+     username: req.body.username,
+     publick_key: req.body.public_key
+   };
+   if (ip_checker.v6(req.connection.remoteAddress)) {
+     new_node.address = "[" + req.connection.remoteAddress + "]:" + req.connection.remotePort;
    } else {
-     return res.json({
-       success: false,
-       message: "Need username and public_key"
-     });
+     new_node.address = req.connection.remoteAddress + ":" + req.connection.remotePort;
    }
+   console.log(new_node);
 
- });
+   //make copy of own list
+   let node_list_copy = [];
+   node_data.node_list.forEach(function(node){
+     node_list_copy.push(node);
+   });
 
- //receiv transaction from peer
- app.post("/api/transactions", function(req, res) {
-   console.log("========================================");
-   console.log("Entered POST /api/transactions");
+   //insert new node
+   node_data.node_list.set(new_node.public_key, new_node);
 
-   //error input handling
-   if (!req.body.transaction || !req.body.signature) {
-     console.log("Error: no transaction or signature");
-     return res.json({
-       success: false,
-       message: "Transaction and signature are both required."
-     });
-   }
-
-   let cur_trans = req.data.transaction;
-   //determine whose signature to use
-   let creator_pub_key_pem = "";
-   if (cur_trans.type = "BORROW") {
-     //only borrowing transactions can be initiated by borrower
-     creator_pub_key_pem = cur_trans.borrower_pk;
-   } else {
-     creator_pub_key_pem = cur_trans.owner_pk;
-   }
-   //validate signature
-
-   //validate transactions against catalog
-
-   //save transaction locally
-
-   //update catalog
-
- });
-
- //receive blockchain push from peer - TESTING
- app.post("/api/blockchain", function(req, res) {
-   console.log("========================================");
-   console.log("Entered POST /api/blockchain");
-   if (req.body.block_chain && !bc_util.resolve_conflict(req.body.block_chain)) {
-
-     //local chain is better. Send back
-     res.json({
-       success: false,
-       block_chain: data.block_chain
-     });
-
-   }
- });
-
- //respind to peer's blockchain request - DONE
- app.get("/api/blockchain", function(req, res) {
-   console.log("========================================");
-   console.log("Enter GET /api/blockchain");
-
-   res.json({
+   //send list back
+   return res.json({
      success: true,
+     list: node_list_copy
+   });
+
+ } else {
+   return res.json({
+     success: false,
+     message: "Need username and public_key"
+   });
+ }
+
+});
+
+//receiv transaction from peer
+app.post("/api/transactions", function(req, res) {
+ console.log("========================================");
+ console.log("Entered POST /api/transactions");
+
+ //error input handling
+ if (!req.body.transaction || !req.body.signature) {
+   console.log("Error: no transaction or signature");
+   return res.json({
+     success: false,
+     message: "Transaction and signature are both required."
+   });
+ }
+
+ let cur_trans = req.data.transaction;
+ let cur_sig = req.body.signature;
+
+ //determine whose signature to use
+ let creator_pub_key_pem = "";
+ if (cur_trans.type = "BORROW") {
+   //only borrowing transactions can be initiated by borrower
+   creator_pub_key_pem = cur_trans.borrower_pk;
+ } else {
+   creator_pub_key_pem = cur_trans.owner_pk;
+ }
+
+ //validate signature
+ if (!bc_util.verify_sig(cur_trans, cur_sig, creator_pub_key_pem)) {
+   console.log("Invalid signature");
+   res.status(400);
+   return res.json({
+     success: false,
+     error: "Invalid signature"
+   });
+ }
+
+ //validate transactions against catalog
+ if (!bc_util.valid_trans(cur_trans)) {
+   console.log("Invalid transaction");
+   res.status(400);
+   return res.json({
+     success: false,
+     error: "Invalid transaction"
+   });
+ }
+
+ //save transaction locally
+ data.unposted_trans.push(cur_trans);
+
+ //update catalog
+ bc_util.render_catalog();
+
+ res.status(200);
+ return res.json({
+   success: true
+ });
+
+});
+
+//receive blockchain push from peer - TESTING
+app.post("/api/blockchain", function(req, res) {
+ console.log("========================================");
+ console.log("Entered POST /api/blockchain");
+ if (req.body.block_chain && !bc_util.resolve_conflict(req.body.block_chain)) {
+
+   //local chain is better. Send back
+   res.json({
+     success: false,
      block_chain: data.block_chain
    });
 
+ }
+});
+
+//respind to peer's blockchain request - DONE
+app.get("/api/blockchain", function(req, res) {
+ console.log("========================================");
+ console.log("Enter GET /api/blockchain");
+
+ res.json({
+   success: true,
+   block_chain: data.block_chain
  });
+
+});
 
  /*
    error handling boilerplate

@@ -10,7 +10,7 @@ var node_util = require("./node_util");
 
 var blockchain_util = {
 
-  //return hash of an object - DONE
+  //return hash of an object
   hash: function(object) {
     return sha256(stringify(object));
   },
@@ -24,7 +24,7 @@ var blockchain_util = {
     return guess_hash.substring(0,4) == "0000";
   },
 
-  //valid whole chain - DONE
+  //valid whole chain
   valid_chain: function(chain) {
     console.log("--Enter valide chain");
 
@@ -48,7 +48,7 @@ var blockchain_util = {
     return true;
   },
 
-  //mine the next proof - DONE
+  //mine the next proof
   mine_proof: function(prev_proof) {
     console.log("--Enter mine proof");
     let cur_proof = 0;
@@ -58,7 +58,7 @@ var blockchain_util = {
     return cur_proof;
   },
 
-  //validate transaction against catalog - DONE
+  //validate transaction against catalog
   valid_trans: function(trans) {
     console.log("--Enter validate transaction");
 
@@ -76,8 +76,6 @@ var blockchain_util = {
       return false;
     }
 
-
-
     //check against catalog
     let key = trans.isbn + trans.owner_pk;
     //cannot double list
@@ -92,11 +90,6 @@ var blockchain_util = {
     }
 
     //cannot return non-exist or available books, cannot return books borrowed by somebody else
-    //console.log(trans.type == "RETURN");
-    //console.log(!data.catalog.has(key));
-    //console.log(!data.catalog.has(key));
-    //console.log(!data.catalog.has(key));
-
     if (trans.type == "RETURN" && (!data.catalog.has(key) || data.catalog.get(key).available || data.catalog.get(key).borrower_pk != trans.borrower_pk)) {
       console.log("Book not exists or is not borrowed");
       return false;
@@ -106,44 +99,38 @@ var blockchain_util = {
 
   },
 
-  //verify the signature of a transaction - DONE
+  //verify the signature of a transaction
   verify_sig: function(trans, sig, public_key) {
     console.log("--Enter verify signature");
     let pk = ursa.createPublicKey(public_key, "base64");
     let result = pk.hashAndVerify("sha256", stringify(trans), sig);
-    console.log("Digital signature is " + result);
+    //console.log("Digital signature is " + result);
     return result;
   },
 
-  //broadcast transaction - TESTING
+  //broadcast transaction
   broadcast_trans: function(trans) {
     console.log("--Enter broadcast transaction");
 
     //create signature and payload
-    console.log("Key: " + data.private_key);
-    console.log("Transaction hash: " + this.hash(data.private_key));
+    //console.log("Key: " + data.private_key);
+    //console.log("Transaction hash: " + this.hash(data.private_key));
     let trans_sig = data.private_key.hashAndSign("sha256", stringify(trans));
-
-    console.log("flag");
 
     let payload = {
       transaction: trans,
       signature: trans_sig
     };
 
-/* to be tested with multiple peers
     data.node_list.forEach(function(node){
       let peer_url = node.address + "/api/transactions";
       axios.post(peer_url, payload)
         .then(response => console.log(response))
         .catch(error => console.log(error));
     });
-*/
-    return payload;
-
   },
 
-  //create a new block, include all unposted transactions - DONE
+  //create a new block, include all unposted transactions
   create_block: function(cur_proof) {
     console.log("--Enter create block");
 
@@ -170,7 +157,7 @@ var blockchain_util = {
 
   },
 
-  //get last blockchain - DONE
+  //get last blockchain
   get_last_block: function() {
     return data.block_chain[data.block_chain.length - 1];
   },
@@ -179,15 +166,23 @@ var blockchain_util = {
   fetch_chain: function() {
 
     //get blockchain from each peers
+    data.node_list.forEach(function(node) {
+      let url = node.address + "/api/blockchain";
+      axios.get(url)
+        .then(response => {
+          if (!response.data.block_chain) {
+            console.log("Peer node failed to respond");
+            return;
+          }
 
-      //validate chain
-
-      //resolve conflict
-
+          this.resolve_conflict(response.data.block_chain, url);
+        })
+        .catch(error => console.log(error));
+    });
 
   },
 
-  //send blockchain to one peer - TESTING
+  //send blockchain to one peer
   send_chain: function(url) {
     let payload = {
       block_chain: data.block_chain
@@ -197,7 +192,7 @@ var blockchain_util = {
       .catch(error => console.log(error));
   },
 
-  //broadcast blockchain - DONE
+  //broadcast blockchain
   broadcast_chain: function() {
 
     data.node_list.forEach(function(node){
@@ -207,7 +202,7 @@ var blockchain_util = {
 
   },
 
-  //resolve chain conflict, true if override - DONE
+  //resolve chain conflict, true if override
   resolve_conflict: function(chain, url) {
 
     //local chain is better, send it back
@@ -224,7 +219,7 @@ var blockchain_util = {
 
   },
 
-  //render catalog - DONE
+  //render catalog
   render_catalog: function() {
     console.log("--Enter render catalog");
 
@@ -318,7 +313,7 @@ var blockchain_util = {
     return catalog_list;
   },
 
-  //get catalog as array - DONE
+  //get catalog as array
   get_catalog: function(){
     console.log("--Enter get catalog");
 

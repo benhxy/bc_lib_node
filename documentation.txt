@@ -13,9 +13,25 @@ config.first_proof = 100; //cache size
 
 module.exports = config;
 
+==========future improvements==========
+
+  Decoupling of functions
+  Decoupling of routes in separate files
+
+  Web frontend
+
+  TLS
+  Appropriate HTTP status and return structure
+  Naming of variables in json return data
+
+  Create log files
+  Export private key as PEM file
+  Import private key PEM file on initiation
+
+
 ==========frontend APIs==========
 
-  POST /api/frontend/users
+  POST /api/frontend/users - TESTING
   GET /api/frontend/transactions - DONE
   POST /api/frontend/transactions - DONE
   GET /api/frontend/nodes - DONE
@@ -25,7 +41,7 @@ module.exports = config;
 ==========peer APIs==========
 
   POST /api/nodes - TESTING
-  POST /api/transactions
+  POST /api/transactions - TESTING
   POST /api/blockchain - TESTING
   GET /api/blockchain - DONE
 
@@ -39,12 +55,12 @@ module.exports = config;
 
   valid_trans: function(trans) - DONE
   verify_sig: function(trans, sig, public_key) - DONE
-  broadcast_trans: function(trans) - TESTING
+  broadcast_trans: function(trans) - DONE
 
   create_block: function(cur_proof) - DONE
   get_last_block: function() - DONE
 
-  fetch_chain: function()
+  fetch_chain: function() - TESTING
   send_chain: function(url) - TESTING
   broadcast_chain: function() - DONE
   resolve_conflict: function(chain, url) - DONE

@@ -1,5 +1,5 @@
 /*
-  blockchain utility functions
+  node utility functions
  */
 var stringify = require("json-stable-stringify"); //offer stable string with keys sorted for hash
 var axios = require("axios"); //json comm library
@@ -10,7 +10,7 @@ var ip_checker = require("is-ip");
 
 var node_util = {
 
-  //initiate node identity data - DONE
+  //initiate node identity data 
   init_node: function(username) {
     data.username = username;
     data.private_key = ursa.generatePrivateKey(2048, 65537);
@@ -18,7 +18,7 @@ var node_util = {
     console.log("Successfully created user and key pair.");
   },
 
-  //register node on either tracker server or peers - DONE
+  //register node on either tracker server or peers
   register_node: function(url) {
     console.log("Enter register node");
     let node_info = {
@@ -40,7 +40,7 @@ var node_util = {
 
   },
 
-  //return address with IP and port - DONE
+  //return address with IP and port
   get_address: function(req) {
 
     let address = "";
